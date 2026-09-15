@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8" />
+  <title>PR Toolkit</title>
+  <link rel="stylesheet" href="popup.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sedgwick+Ave+Display&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap"
+    rel="stylesheet">
+</head>
+
+<body>
+  <section id="home-view">
+    <header>
+      <h1 class="title">Dev Tools</h1>
+    </header>
+    <section id="feature-list" class="btns collapsed">
+      <button type="button" class="title google section-toggle">
+        <svg class="section-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M20.1376 9.05555C21.2935 9.05555 22.2306 8.11848 22.2306 6.96253C22.2306 5.80659 21.2935 4.86951 20.1376 4.86951C18.9816 4.86951 18.0446 5.80659 18.0446 6.96253C18.0446 8.11848 18.9816 9.05555 20.1376 9.05555Z" />
+          <path
+            d="M19.0215 18.7972C19.1561 18.8142 19.2932 18.8229 19.4325 18.8229H19.4478C21.2416 18.8229 22.6957 17.3688 22.6957 15.575V10.8694C22.6957 10.3814 22.3001 9.98572 21.812 9.98572H19.2939C19.4364 10.2554 19.5149 10.5636 19.5096 10.8896V16.236C19.5291 17.144 19.3536 18.0111 19.0215 18.7972Z" />
+          <path
+            d="M17.2096 17.9435C16.5785 17.3511 16.1842 16.5094 16.1841 15.5755V10.9857H17.5096V16.2588L17.5099 16.2704C17.5237 16.8614 17.416 17.4271 17.2096 17.9435Z" />
+          <path
+            d="M13.9281 9.03159C15.4559 8.87992 16.6491 7.59093 16.6491 6.02326C16.6491 4.35356 15.2955 3 13.6258 3C11.9561 3 10.6025 4.35356 10.6025 6.02326C10.6025 6.08092 10.6042 6.1382 10.6073 6.19507H12.0755C13.0987 6.19507 13.9281 7.0245 13.9281 8.04762V9.03159Z" />
+          <path d="M11.9281 8.5252V8.19507H11.5226C11.6478 8.31634 11.7835 8.42688 11.9281 8.5252Z" />
+          <path
+            d="M8.27593 16.4276C8.2753 16.3677 8.27568 16.3075 8.27708 16.2471V15.1759H8.75V10.6759H10.5V9.98572H11.9281V16.4276H8.27593Z" />
+          <path
+            d="M8.695 18.4276H12.0755C13.0987 18.4276 13.9281 17.5982 13.9281 16.5751V9.98572H17.6571C18.1393 9.99765 18.5208 10.3979 18.5096 10.8801V16.2471C18.577 19.1412 16.2873 21.5428 13.3934 21.6136C11.2731 21.5617 9.47723 20.2588 8.695 18.4276Z" />
+          <path fill-rule="evenodd" clip-rule="evenodd"
+            d="M12.0757 7.19507H3.54823C3.07739 7.19507 2.69568 7.57677 2.69568 8.04762V16.5751C2.69568 17.0459 3.07738 17.4276 3.54823 17.4276H12.0757C12.5465 17.4276 12.9282 17.0459 12.9282 16.5751V8.04762C12.9282 7.57677 12.5465 7.19507 12.0757 7.19507ZM5.5 10.6759H7.25V15.1759H8.25V10.6759H10V9.6759H5.5V10.6759Z" />
+        </svg>
+        <span>Teams</span>
+        <div class="collapse">
+          <svg class="section-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+            aria-hidden="true">
+            <path d="M18 9.00005C18 9.00005 13.5811 15 12 15C10.4188 15 6 9 6 9" stroke="currentColor"
+              stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" />
+          </svg>
+        </div>
+      </button>
+      <button class="btn vertical" data-feature="extractor">
+        <span class="btn__title">Extractor de transcripciones</span>
+        <span class="btn__desc">Descarga las transcripciones de las llamadas.</span>
+      </button>
+    </section>
+    <section id="feature-list" class="btns collapsed">
+      <button type="button" class="title google section-toggle">
+        <svg class="section-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">
+          <path
+            d="M19.154 20.418h-6.256l-1.692-8.842h9.464zM1.954 2.498c-0.004-0-0.008-0-0.013-0-0.531 0-0.961 0.43-0.961 0.961 0 0.055 0.005 0.109 0.013 0.161l-0.001-0.006 4.084 24.795c0.107 0.62 0.638 1.086 1.279 1.093h19.595c0.003 0 0.007 0 0.010 0 0.478 0 0.875-0.347 0.953-0.803l0.001-0.006 4.093-25.071c0.008-0.046 0.012-0.1 0.012-0.154 0-0.531-0.43-0.961-0.961-0.961-0.004 0-0.009 0-0.013 0h0.001z" />
+        </svg>
+        <span>Bitbucket</span>
+        <div class="collapse">
+          <svg class="section-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+            aria-hidden="true">
+            <path d="M18 9.00005C18 9.00005 13.5811 15 12 15C10.4188 15 6 9 6 9" stroke="currentColor"
+              stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" />
+          </svg>
+        </div>
+      </button>
+      <button class="btn vertical" data-feature="extractor">
+        <span class="btn__title">Extractor de comentarios</span>
+        <span class="btn__desc">Extrae los comentarios de revisión de un PR a Markdown</span>
+      </button>
+    </section>
+    <section id="feature-list" class="btns collapsed">
+      <button type="button" class="title google section-toggle">
+        <svg class="section-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            d="M5.22576 11.3294L12.224 2.34651C12.7713 1.64397 13.7972 2.08124 13.7972 3.01707V9.96994C13.7972 10.5305 14.1995 10.985 14.6958 10.985H18.0996C18.8729 10.985 19.2851 12.0149 18.7742 12.6706L11.776 21.6535C11.2287 22.356 10.2028 21.9188 10.2028 20.9829V14.0301C10.2028 13.4695 9.80048 13.015 9.3042 13.015H5.90035C5.12711 13.015 4.71494 11.9851 5.22576 11.3294Z"
+            stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" />
+        </svg>
+        <span class="btn_title">Funcionalidades</span>
+        <div class="collapse">
+          <svg class="section-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+            aria-hidden="true">
+            <path d="M18 9.00005C18 9.00005 13.5811 15 12 15C10.4188 15 6 9 6 9" stroke="currentColor"
+              stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" />
+          </svg>
+        </div>
+      </button>
+      <button class="btn vertical" data-feature="bearer">
+        <span class="btn__title">Interceptor de Bearer token</span>
+        <span class="btn__desc">Escucha peticiones y captura el token de autorización</span>
+      </button>
+    </section>
+  </section>
+
+  <section id="bearer-view" hidden>
+    <header>
+      <button class="back-home" title="Volver">←</button>
+      <h1>Bearer Token</h1>
+    </header>
+
+    <section id="bearer-body">
+      <p id="bearer-status"></p>
+      <div id="bearer-actions">
+        <button id="bearer-toggle" class="primary">Iniciar escucha</button>
+        <button id="bearer-clear">Limpiar</button>
+      </div>
+      <div id="bearer-result" hidden>
+        <label>Token <input id="bearer-token" type="text" readonly /></label>
+        <button id="bearer-copy">Copiar</button>
+      </div>
+    </section>
+  </section>
+
+  <section id="extractor-view" hidden>
+    <header>
+      <button class="back-home" title="Volver">←</button>
+      <h1>Comentarios del PR</h1>
+      <button id="rescan" title="Reescanear la página actual">🔄</button>
+    </header>
+
+    <section id="meta-fields">
+      <label>Repo <input id="repo" type="text" /></label>
+      <label>Rama destino <input id="target" type="text" /></label>
+      <label>Rama origen <input id="source" type="text" /></label>
+    </section>
+
+    <div id="path-preview"></div>
+
+    <section id="toolbar">
+      <button id="check-all">Marcar todos</button>
+      <button id="uncheck-all">Desmarcar todos</button>
+      <span id="count"></span>
+    </section>
+
+    <section id="list"></section>
+
+    <section id="empty-state" hidden>
+      <p>No se encontraron comentarios inline visibles en esta página.</p>
+      <p>Verifica que estés en la pestaña Diff del PR y que los comentarios no
+        estén colapsados (botón "Show comments").</p>
+    </section>
+
+    <footer>
+      <div id="status"></div>
+      <div id="footer-actions">
+        <button id="open-options">Opciones</button>
+        <button id="extract" class="primary">Extraer</button>
+      </div>
+    </footer>
+  </section>
+
+  <script src="../common/idb.js"></script>
+  <script src="../common/markdown.js"></script>
+  <script src="popup.js"></script>
+</body>
+
+</html>

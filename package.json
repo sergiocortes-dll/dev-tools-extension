@@ -1,0 +1,8 @@
+{
+  "name": "pr-toolkit-extension",
+  "private": true,
+  "description": "Fuente de iconos para la extensión (no se empaqueta ni se ejecuta en el navegador).",
+  "devDependencies": {
+    "@hugeicons/core-free-icons": "^4.3.3"
+  }
+}

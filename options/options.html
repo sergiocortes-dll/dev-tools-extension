@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>PR Comment Extractor — Opciones</title>
+  <style>
+    body { font: 14px/1.5 system-ui, sans-serif; color: #172b4d; max-width: 560px; margin: 40px auto; padding: 0 16px; }
+    h1 { font-size: 18px; }
+    button { font: inherit; padding: 8px 14px; border-radius: 4px; border: 1px solid #0052cc; background: #0052cc; color: #fff; cursor: pointer; }
+    #current { margin-top: 12px; font-size: 13px; color: #44546f; }
+    #warning { margin-top: 16px; font-size: 12px; color: #bf2600; }
+  </style>
+</head>
+<body>
+  <h1>Carpeta raíz de extracción</h1>
+  <p>
+    Elige la carpeta donde se guardarán los reportes. Dentro de ella se crea
+    automáticamente la estructura <code>{repo}/{rama-destino}/{rama-origen}/{fecha}__{ronda}.md</code>.
+  </p>
+  <button id="pick">Elegir carpeta...</button>
+  <div id="current">Ninguna carpeta configurada todavía.</div>
+  <div id="warning" hidden>
+    Esta función requiere Chrome o Edge (File System Access API). No funciona en Firefox.
+  </div>
+
+  <script src="../common/idb.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>
