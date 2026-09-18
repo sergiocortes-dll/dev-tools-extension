@@ -1,7 +1,7 @@
 // Función inyectada en la pestaña activa vía chrome.scripting.executeScript.
 // Debe ser autocontenida (sin closures sobre variables externas): todo lo
 // que necesita vive dentro de su propio cuerpo.
-function extractPageData() {
+async function extractPageData() {
   function collapseWhitespace(text) {
     return text.replace(/[ \t]+/g, ' ').replace(/\s*\n\s*/g, '\n').trim();
   }
@@ -89,6 +89,33 @@ function extractPageData() {
     return results;
   }
 
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  // Bitbucket carga/virtualiza los archivos del diff con JavaScript: solo
+  // los que están cerca del viewport existen en el DOM. Recorremos la página
+  // igual que captureTranscriptInPage, acumulando por id (los bloques ya
+  // vistos pueden desmontarse al seguir bajando).
+  async function collectAllComments() {
+    const commentsById = new Map();
+    const mergeVisible = () => {
+      collectComments().forEach((c) => commentsById.set(c.id, c));
+    };
+
+    const scroller = document.querySelector('[role="main"]') || document.scrollingElement || document.documentElement;
+    scroller.scrollTop = 0;
+    await sleep(600);
+    let lastTop = -1;
+    while (scroller.scrollTop !== lastTop) {
+      mergeVisible();
+      lastTop = scroller.scrollTop;
+      scroller.scrollTop += scroller.clientHeight * 0.8;
+      await sleep(400); // dar tiempo a que el diff virtualizado renderice
+    }
+    mergeVisible();
+
+    return Array.from(commentsById.values());
+  }
+
   function detectRepo() {
     const cloud = location.pathname.match(/^\/([^/]+)\/([^/]+)\/pull-requests\/(\d+)/);
     if (cloud) return { repo: cloud[2], prNumber: cloud[3] };
@@ -135,7 +162,7 @@ function extractPageData() {
     return { source, target };
   }
 
-  const comments = collectComments();
+  const comments = await collectAllComments();
   const repoInfo = detectRepo();
   const branches = detectBranches();
 
@@ -151,9 +178,101 @@ function extractPageData() {
   };
 }
 
+// Función inyectada en la pestaña activa vía chrome.scripting.executeScript.
+// Adaptada de capture-transcript.js: recorre la lista virtualizada de la
+// transcripción de Teams/Stream, acumula cada intervención y descarga
+// "transcript.txt". Autocontenida, igual que extractPageData.
+async function captureTranscriptInPage() {
+  const scroller = document.querySelector('[data-is-scrollable="true"]');
+  if (!scroller) {
+    return { ok: false, error: 'No se encontró el contenedor de la transcripción.' };
+  }
+
+  const entries = new Map(); // índice -> {time, speaker, text}
+  const labelRe = /^(.*?)\s*(?:(\d+)\s+horas?)?\s*(?:(\d+)\s+minutos?)?\s*(?:(\d+)\s+segundos?)?$/;
+
+  function collect() {
+    document.querySelectorAll('[id^="timestampSpeakerAriaLabel-"]').forEach((span) => {
+      const idx = parseInt(span.id.split('-')[1], 10);
+      if (entries.has(idx)) return;
+      const body = document.getElementById('sub-entry-' + idx);
+      if (!body) return;
+
+      const label = span.textContent.trim();
+      const m = label.match(labelRe);
+      const hasTime = m && (m[2] || m[3] || m[4]);
+
+      if (hasTime) {
+        const h = parseInt(m[2] || 0, 10);
+        const min = parseInt(m[3] || 0, 10);
+        const s = parseInt(m[4] || 0, 10);
+        const time = h > 0
+          ? `${h}:${String(min).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+          : `${min}:${String(s).padStart(2, '0')}`;
+        entries.set(idx, { time, speaker: m[1].trim(), text: body.textContent.trim() });
+      } else {
+        entries.set(idx, { time: '', speaker: '', text: body.textContent.trim() });
+      }
+    });
+  }
+
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  try {
+    scroller.scrollTop = 0;
+    await sleep(800);
+    let lastTop = -1;
+    while (scroller.scrollTop !== lastTop) {
+      collect();
+      lastTop = scroller.scrollTop;
+      scroller.scrollTop += scroller.clientHeight * 0.8;
+      await sleep(500); // dar tiempo a que la lista virtualizada renderice
+    }
+    collect();
+  } catch (err) {
+    return { ok: false, error: err.message || String(err) };
+  }
+
+  const sorted = [...entries.entries()].sort((a, b) => a[0] - b[0]).map(([, e]) => e);
+  const lines = sorted.map((e) => (e.time ? `[${e.time}] ${e.speaker}: ${e.text}` : `--- ${e.text} ---`));
+
+  const titleEl = document.querySelector('[data-automationid="aboutVideoTitleView"]');
+  const callName = titleEl ? titleEl.textContent.trim() : '';
+
+  return {
+    ok: true,
+    count: sorted.length,
+    callName, // vacío si no se pudo detectar el título de la grabación
+    text: '﻿' + lines.join('\r\n'),
+  };
+}
+
 // ---------------------------------------------------------------------
 // Lógica del popup
 // ---------------------------------------------------------------------
+
+const LOADING_ICON = `<svg class="section-icon spin-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="fill: none" aria-hidden="true">
+  <path d="M12 3V6" stroke="currentColor" stroke-linecap="round" stroke-width="1.5" />
+  <path d="M12 18V21" stroke="currentColor" stroke-linecap="round" stroke-width="1.5" />
+  <path d="M21 12L18 12" stroke="currentColor" stroke-linecap="round" stroke-width="1.5" />
+  <path d="M6 12L3 12" stroke="currentColor" stroke-linecap="round" stroke-width="1.5" />
+  <path d="M18.3635 5.63672L16.2422 7.75804" stroke="currentColor" stroke-linecap="round" stroke-width="1.5" />
+  <path d="M7.75804 16.2422L5.63672 18.3635" stroke="currentColor" stroke-linecap="round" stroke-width="1.5" />
+  <path d="M18.3635 18.3635L16.2422 16.2422" stroke="currentColor" stroke-linecap="round" stroke-width="1.5" />
+  <path d="M7.75804 7.75804L5.63672 5.63672" stroke="currentColor" stroke-linecap="round" stroke-width="1.5" />
+</svg>`;
+
+// Deja el botón deshabilitado mostrando el spinner; devuelve una función
+// que restaura su contenido e interactividad originales.
+function withButtonLoading(btn, loadingHTML) {
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = loadingHTML;
+  return () => {
+    btn.disabled = false;
+    btn.innerHTML = original;
+  };
+}
 
 const state = {
   comments: [],
@@ -168,10 +287,15 @@ const els = {
   pathPreview: document.getElementById('path-preview'),
   list: document.getElementById('list'),
   emptyState: document.getElementById('empty-state'),
+  emptyStateMessage: document.getElementById('empty-state-message'),
   count: document.getElementById('count'),
   status: document.getElementById('status'),
   extractBtn: document.getElementById('extract'),
+  scanBtn: document.getElementById('scan-files'),
 };
+
+const NO_COMMENTS_MESSAGE = 'No se encontraron comentarios inline visibles en esta página. '
+  + 'Verifica que estés en la pestaña Diff del PR y que los comentarios no estén colapsados (botón "Show comments").';
 
 function sanitizeSegment(name) {
   return (name || '').replace(/[\\/:*?"<>|]/g, '-').trim();
@@ -197,6 +321,7 @@ function setStatus(text, isError) {
 function renderList() {
   els.list.innerHTML = '';
   if (state.comments.length === 0) {
+    els.emptyStateMessage.textContent = NO_COMMENTS_MESSAGE;
     els.emptyState.hidden = false;
     updateCount();
     return;
@@ -269,14 +394,16 @@ function saveMeta(url, meta) {
 
 async function scan() {
   setStatus('Escaneando página...');
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab || !tab.id) {
-    setStatus('No se pudo acceder a la pestaña activa.', true);
-    return;
-  }
+  const restoreHeaderAction = withButtonLoading(headerEls.action, LOADING_ICON);
+  const restoreScanBtn = withButtonLoading(els.scanBtn, `${LOADING_ICON} Escaneando...`);
 
   let result;
   try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab || !tab.id) {
+      setStatus('No se pudo acceder a la pestaña activa.', true);
+      return;
+    }
     const [injection] = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       func: extractPageData,
@@ -285,6 +412,9 @@ async function scan() {
   } catch (err) {
     setStatus('No se pudo leer la página (¿es una pestaña de Bitbucket?): ' + err.message, true);
     return;
+  } finally {
+    restoreHeaderAction();
+    restoreScanBtn();
   }
 
   state.comments = result.comments;
@@ -347,6 +477,7 @@ async function extract() {
   const source = els.source.value.trim() || 'origen-desconocido';
   saveMeta(state.pageUrl, { repo, target, source });
 
+  const restoreExtractBtn = withButtonLoading(els.extractBtn, `${LOADING_ICON} Extrayendo...`);
   try {
     setStatus('Solicitando permiso de escritura...');
     const permission = await root.requestPermission({ mode: 'readwrite' });
@@ -375,12 +506,84 @@ async function extract() {
     setStatus(`Guardado: ${repo}/${target}/${source}/${filename}`);
   } catch (err) {
     setStatus('Error al guardar: ' + err.message, true);
+  } finally {
+    restoreExtractBtn();
   }
 }
 
-document.getElementById('rescan').addEventListener('click', scan);
+const transcriptEls = {
+  status: document.getElementById('transcript-status'),
+  capture: document.getElementById('transcript-capture'),
+  callName: document.getElementById('transcript-call-name'),
+};
+
+function setTranscriptStatus(text, isError) {
+  transcriptEls.status.textContent = text;
+  transcriptEls.status.style.color = isError ? '#bf2600' : '';
+}
+
+async function captureTranscript() {
+  const root = await getRootHandle();
+  if (!root) {
+    setTranscriptStatus('Configura primero la carpeta raíz en Opciones.', true);
+    chrome.runtime.openOptionsPage();
+    return;
+  }
+
+  setTranscriptStatus('Capturando transcripción...');
+  const restoreCaptureBtn = withButtonLoading(transcriptEls.capture, `${LOADING_ICON} Capturando...`);
+
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab || !tab.id) {
+      setTranscriptStatus('No se pudo acceder a la pestaña activa.', true);
+      return;
+    }
+    const [injection] = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: captureTranscriptInPage,
+    });
+    const result = injection.result;
+    if (!result || !result.ok) {
+      setTranscriptStatus((result && result.error) || 'No se pudo capturar la transcripción.', true);
+      return;
+    }
+
+    // Si se detectó el título en la página, confirma/actualiza el input.
+    // Si no, se usa lo que el usuario haya escrito ahí manualmente.
+    if (result.callName) {
+      transcriptEls.callName.value = result.callName;
+    }
+    const folderName = transcriptEls.callName.value.trim() || 'llamada-desconocida';
+
+    setTranscriptStatus('Guardando transcripción...');
+    const permission = await root.requestPermission({ mode: 'readwrite' });
+    if (permission !== 'granted') {
+      setTranscriptStatus('Permiso denegado para escribir en la carpeta configurada.', true);
+      return;
+    }
+
+    const dir = await ensurePath(root, ['transcripciones', folderName]);
+    const fileHandle = await dir.getFileHandle('transcription.txt', { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(result.text);
+    await writable.close();
+
+    setTranscriptStatus(
+      `Guardado: transcripciones/${sanitizeSegment(folderName)}/transcription.txt (${result.count} intervenciones).`
+    );
+  } catch (err) {
+    setTranscriptStatus('Error al capturar: ' + err.message, true);
+  } finally {
+    restoreCaptureBtn();
+  }
+}
+
+transcriptEls.capture.addEventListener('click', captureTranscript);
+
 document.getElementById('open-options').addEventListener('click', () => chrome.runtime.openOptionsPage());
 document.getElementById('extract').addEventListener('click', extract);
+document.getElementById('scan-files').addEventListener('click', scan);
 document.getElementById('check-all').addEventListener('click', () => {
   state.checked = new Set(state.comments.map((c) => c.id));
   renderList();
@@ -399,7 +602,45 @@ document.getElementById('uncheck-all').addEventListener('click', () => {
 const homeView = document.getElementById('home-view');
 const extractorView = document.getElementById('extractor-view');
 const bearerView = document.getElementById('bearer-view');
-const allViews = [homeView, extractorView, bearerView];
+const transcriptView = document.getElementById('transcript-view');
+const allViews = [homeView, extractorView, bearerView, transcriptView];
+
+const headerEls = {
+  back: document.getElementById('header-back'),
+  title: document.getElementById('header-title'),
+  action: document.getElementById('header-action'),
+};
+
+const HEADER_CONFIG = {
+  home: { title: 'Dev Tools', fancy: true },
+  bearer: { title: 'Bearer Token', back: true },
+  transcript: { title: 'Transcripciones', back: true },
+  extractor: {
+    title: 'Comentarios del PR',
+    back: true,
+    action: {
+      icon: `<svg class="section-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" style="fill: none" aria-hidden="true">
+  <path d="M20.4879 15C19.2524 18.4956 15.9187 21 12 21C7.02943 21 3 16.9706 3 12C3 7.02943 7.02943 3 12 3C15.7292 3 18.9286 5.26806 20.2941 8.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" />
+  <path d="M15 9H18C19.4142 9 20.1213 9 20.5607 8.56066C21 8.12132 21 7.41421 21 6V3" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" />
+</svg>`,
+      title: 'Reescanear la página actual',
+      onClick: scan,
+    },
+  },
+};
+
+function updateHeader(name) {
+  const cfg = HEADER_CONFIG[name];
+  headerEls.title.textContent = cfg.title;
+  headerEls.title.classList.toggle('title', Boolean(cfg.fancy));
+
+  headerEls.back.classList.toggle('is-hidden', !cfg.back);
+
+  headerEls.action.classList.toggle('is-hidden', !cfg.action);
+  headerEls.action.innerHTML = cfg.action ? cfg.action.icon : '';
+  headerEls.action.title = cfg.action ? cfg.action.title : '';
+  headerEls.action.onclick = cfg.action ? cfg.action.onClick : null;
+}
 
 function showView(view) {
   allViews.forEach((v) => (v.hidden = v !== view));
@@ -407,27 +648,45 @@ function showView(view) {
 
 function showHome() {
   showView(homeView);
+  updateHeader('home');
 }
 
 function showExtractor() {
   showView(extractorView);
-  scan();
+  updateHeader('extractor');
 }
 
 function showBearer() {
   showView(bearerView);
+  updateHeader('bearer');
   refreshBearerView();
 }
 
-document.querySelectorAll('.back-home').forEach((btn) => btn.addEventListener('click', showHome));
+function showTranscript() {
+  showView(transcriptView);
+  updateHeader('transcript');
+}
+
+document.getElementById('header-back').addEventListener('click', showHome);
 document.querySelectorAll('.btn[data-feature]').forEach((btn) => {
   btn.addEventListener('click', () => {
     if (btn.dataset.feature === 'extractor') showExtractor();
     else if (btn.dataset.feature === 'bearer') showBearer();
+    else if (btn.dataset.feature === 'transcript') showTranscript();
   });
 });
 document.querySelectorAll('.section-toggle').forEach((toggle) => {
-  toggle.addEventListener('click', () => toggle.closest('.btns').classList.toggle('collapsed'));
+  const container = toggle.closest('.btns');
+  const collapsedHeight = () => toggle.offsetHeight;
+
+  container.style.height = `${collapsedHeight()}px`;
+
+  toggle.addEventListener('click', () => {
+    const isOpen = container.classList.toggle('collapsed');
+    // scrollHeight refleja el layout real (line-clamp, fuentes ya cargadas, etc.)
+    // en lugar de recalcular a mano la suma de alturas + gaps.
+    container.style.height = isOpen ? `${container.scrollHeight}px` : `${collapsedHeight()}px`;
+  });
 });
 
 // ---------------------------------------------------------------------
@@ -489,6 +748,10 @@ bearerEls.copy.addEventListener('click', async () => {
   setTimeout(() => (bearerEls.copy.textContent = 'Copiar'), 1200);
 });
 
-chrome.storage.onChanged.addListener((_changes, area) => {
-  if (area === 'session' && !bearerView.hidden) refreshBearerView();
-});
+try {
+  chrome.storage.onChanged.addListener((_changes, area) => {
+    if (area === 'session' && !bearerView.hidden) refreshBearerView();
+  });
+} catch (err) {
+  console.warn('No se pudo registrar el listener de storage:', err);
+}

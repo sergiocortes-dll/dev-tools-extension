@@ -82,12 +82,33 @@ body>section {
   padding: 1rem;
 }
 
-body>section header {
+#app-header {
   display: flex;
   flex-flow: row;
   align-items: center;
   gap: .5rem;
   padding: 1rem;
+  margin: 1rem 1rem 0;
+}
+
+#header-title {
+  flex: 1;
+  text-align: center;
+}
+
+#header-back,
+#header-action {
+  flex-shrink: 0;
+  transform: scale(1);
+  opacity: 1;
+  transition: transform .2s ease-in-out, opacity .2s ease-in-out;
+}
+
+#header-back.is-hidden,
+#header-action.is-hidden {
+  transform: scale(0);
+  opacity: 0;
+  pointer-events: none;
 }
 
 .elevated {
@@ -100,6 +121,21 @@ body>section header {
   height: 1.1rem;
   flex-shrink: 0;
   fill: currentColor;
+}
+
+.spin-icon {
+  animation: spin .8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.btn:disabled {
+  opacity: .6;
+  cursor: not-allowed;
 }
 
 .btn {
@@ -121,9 +157,10 @@ body>section header {
 }
 
 .btn.icon {
+  width: 1.9rem;
+  height: 1.9rem;
   padding: .125rem;
   background-color: var(--bg-elevated-foreground);
-  aspect-ratio: 9/16;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -146,6 +183,14 @@ body>section header {
   gap: .326rem;
   align-items: flex-start;
   padding: 1rem;
+}
+
+.btn.vertical .btn__title {
+  flex: none;
+}
+
+.btn.vertical .btn__desc {
+  flex-shrink: 0;
 }
 
 .btn__desc {
@@ -172,20 +217,19 @@ body>section header {
 .btns {
   display: flex;
   flex-flow: column;
+  gap: .375rem;
   overflow: hidden;
-  height: 100%;
-  max-height: 3.4375rem;
-  transition: .2s ease-in-out;
+  height: 3.4375rem;
+  transition: height .2s ease-in-out;
   background: transparent;
 }
 
 .btns .btn {
   padding: 1rem;
+  flex-shrink: 0;
 }
 
 .btns.collapsed {
-  max-height: none;
-  gap: .375rem;
   margin-bottom: .5rem;
 }
 
@@ -203,4 +247,15 @@ body>section header {
 
 [hidden] {
   display: none !important;
+}
+
+/** FOOTER */
+.footer-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.footer-actions .btn {
+  flex: 1;
+  justify-content: center;
 }
